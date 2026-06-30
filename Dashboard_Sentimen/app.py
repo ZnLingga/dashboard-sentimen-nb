@@ -151,9 +151,17 @@ with tab2:
                 if label_col != "Tidak Ada":
                     st.markdown("#### 🏆 Metrik Evaluasi Validasi")
                     
-                    y_true_safe = df[label_col].astype(str)
-                    y_pred_safe = pd.Series(predictions).astype(str)
-                    acc = accuracy_score(y_true_safe, y_pred_safe)
+                    y_pred_text = df['Hasil Prediksi Model']
+                    
+                    def mapping_label_aktual(x):
+                        try:
+                            return label_map.get(int(x), str(x).strip().capitalize())
+                        except:
+                            return str(x).strip().capitalize()
+                            
+                    y_true_text = df[label_col].apply(mapping_label_aktual)
+                    
+                    acc = accuracy_score(y_true_text, y_pred_text)
                     
                     col_inner1, col_inner2 = st.columns(2)
                     col_inner1.metric(label="🎯 Skor Akurasi Valid", value=f"{acc*100:.2f}%")
@@ -162,7 +170,7 @@ with tab2:
                     st.markdown("#### 🧩 Confusion Matrix")
                     
                     label_urut = ['Negatif', 'Netral', 'Positif']
-                    cm = confusion_matrix(y_true_safe, y_pred_safe, labels=label_urut)
+                    cm = confusion_matrix(y_true_text, y_pred_text, labels=label_urut)
                     
                     cm_df = pd.DataFrame(cm, index=label_urut, columns=label_urut).reset_index().melt(id_vars='index')
                     cm_df.columns = ['Aktual', 'Prediksi', 'Jumlah']
@@ -187,7 +195,7 @@ with tab2:
                     st.altair_chart(cm_chart, use_container_width=True)
                     
                     with st.expander("Buka Detail Laporan Klasifikasi (Precision/Recall)"):
-                        st.code(classification_report(y_true_safe, y_pred_safe, zero_division=0))
+                        st.code(classification_report(y_true_text, y_pred_text, zero_division=0))
                 else:
                     st.markdown("#### 💡 Informasi Kluster")
                     st.info("Unggah berkas yang memiliki kunci label aktual jika Anda ingin melihat persentase kalkulasi akurasi model serta Confusion Matrix secara otomatis pada dataset ini.")
