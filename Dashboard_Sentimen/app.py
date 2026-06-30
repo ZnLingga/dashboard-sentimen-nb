@@ -2,11 +2,18 @@ import streamlit as st
 import pandas as pd
 import joblib
 from sklearn.metrics import accuracy_score, classification_report
+import os
 
 @st.cache_resource
 def load_model():
-    model = joblib.load('model_sentimen.pkl')
-    vectorizer = joblib.load('vectorizer.pkl')
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    
+    model_path = os.path.join(base_path, 'model_sentimen.pkl')
+    vectorizer_path = os.path.join(base_path, 'vectorizer.pkl')
+    
+    model = joblib.load(model_path)
+    vectorizer = joblib.load(vectorizer_path)
+    
     return model, vectorizer
 
 model, vectorizer = load_model()
