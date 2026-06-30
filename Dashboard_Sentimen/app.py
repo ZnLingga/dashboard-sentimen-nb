@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import joblib
 import os
-from sklearn.metrics import accuracy_score, classification_report
+import altair as alt
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
 
 st.set_page_config(
     page_title="Sentiment Analysis Dashboard",
@@ -32,7 +33,6 @@ st.markdown("""
         font-size: 1.15rem;
         margin-bottom: 2.5rem;
     }
-    /* Desain Custom Card Informasi */
     .metric-card {
         padding: 20px;
         border-radius: 12px;
@@ -82,7 +82,7 @@ with tab1:
     col1, col2 = st.columns([2, 1])
     with col1:
         st.markdown("### 📝 Masukkan Kalimat Ulasan")
-        user_input = st.text_area("Ketik atau tempel ulasan ulasan konsumen di bawah ini:", height=160, placeholder="Tulis komentar di sini...")
+        user_input = st.text_area("Ketik atau tempel ulasan konsumen di bawah ini:", height=160, placeholder="Tulis komentar di sini...")
         submit_btn = st.button("🔮 Mulai Ekstraksi Sentimen", use_container_width=True)
         
     with col2:
@@ -141,7 +141,7 @@ with tab2:
             
             st.markdown("---")
             
-            g_col1, g_col2 = st.columns([11, 9])
+            g_col1, g_col2 = st.columns([1, 1])
             
             with g_col1:
                 st.markdown("#### 📊 Grafik Komparasi Frekuensi")
@@ -157,18 +157,44 @@ with tab2:
                     
                     col_inner1, col_inner2 = st.columns(2)
                     col_inner1.metric(label="🎯 Skor Akurasi Valid", value=f"{acc*100:.2f}%")
-                    col_inner2.metric(label="📊 Total Sampel Sukses", value=f"{len(df)} Data")
+                    col_inner2.metric(label="📦 Total Sampel Sukses", value=f"{len(df)} Data")
+                    
+                    st.markdown("#### 🧩 Confusion Matrix")
+                    
+                    label_urut = ['Negatif', 'Netral', 'Positif']
+                    cm = confusion_matrix(y_true_safe, y_pred_safe, labels=label_urut)
+                    
+                    cm_df = pd.DataFrame(cm, index=label_urut, columns=label_urut).reset_index().melt(id_vars='index')
+                    cm_df.columns = ['Aktual', 'Prediksi', 'Jumlah']
+                    
+                    base = alt.Chart(cm_df).encode(
+                        x=alt.X('Prediksi:O', title='Prediksi Model'),
+                        y=alt.Y('Aktual:O', title='Label Aktual', sort='-y')
+                    )
+                    rect = base.mark_rect().encode(
+                        color=alt.Color('Jumlah:Q', scale=alt.Scale(scheme='blues'), title='Jumlah Data')
+                    )
+                    text = base.mark_text(baseline='middle', fontSize=14, fontWeight='bold').encode(
+                        text='Jumlah:Q',
+                        color=alt.condition(
+                            alt.datum.Jumlah > (cm_df['Jumlah'].max() / 2),
+                            alt.value('white'),
+                            alt.value('black')
+                        )
+                    )
+                    cm_chart = (rect + text).properties(height=300)
+                    
+                    st.altair_chart(cm_chart, use_container_width=True)
                     
                     with st.expander("Buka Detail Laporan Klasifikasi (Precision/Recall)"):
                         st.code(classification_report(y_true_safe, y_pred_safe, zero_division=0))
                 else:
                     st.markdown("#### 💡 Informasi Kluster")
-                    st.info("Unggah berkas yang memiliki kunci label aktual jika Anda ingin melihat persentase kalkulasi akurasi model secara otomatis pada dataset ini.")
+                    st.info("Unggah berkas yang memiliki kunci label aktual jika Anda ingin melihat persentase kalkulasi akurasi model serta Confusion Matrix secara otomatis pada dataset ini.")
 
             st.markdown("---")
             
             st.markdown("#### 📋 Lembar Pratinjau Dataset Hasil Prediksi")
-            
             def style_sentiment_column(val):
                 if val == 'Positif': return 'background-color: #D1E7DD; color: #0F5132; font-weight: 500;'
                 elif val == 'Negatif': return 'background-color: #F8D7DA; color: #842029; font-weight: 500;'
