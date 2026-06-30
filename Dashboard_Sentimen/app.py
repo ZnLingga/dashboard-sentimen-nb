@@ -125,11 +125,15 @@ with tab2:
             if label_col != "Tidak Ada":
                 st.markdown("---")
                 st.markdown("### 🏆 Evaluasi Model")
-                acc = accuracy_score(df[label_col], predictions)
+                
+                y_true_safe = df[label_col].astype(str)
+                y_pred_safe = pd.Series(predictions).astype(str)
+                
+                acc = accuracy_score(y_true_safe, y_pred_safe)
                 
                 col_m1, col_m2 = st.columns(2)
                 col_m1.metric(label="✅ Akurasi Total", value=f"{acc*100:.2f}%")
                 col_m2.metric(label="📦 Total Data Diuji", value=f"{len(df)} Ulasan")
                 
                 with st.expander("Lihat Classification Report Lengkap"):
-                    st.code(classification_report(df[label_col], predictions, zero_division=0))
+                    st.code(classification_report(y_true_safe, y_pred_safe, zero_division=0))
